@@ -97,7 +97,8 @@ def train_and_save_model():
     X_scaled = scaler.fit_transform(X)
     
     # Define Ensemble
-    rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)    lr = LogisticRegression(max_iter=1000, random_state=42)
+    rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1) 
+    lr = LogisticRegression(max_iter=1000, random_state=42)
     svc = SVC(kernel='rbf', probability=True, random_state=42)
     
     ensemble_model = VotingClassifier(
@@ -146,7 +147,8 @@ def load_saved_model():
             print(f"❌ Error loading models ({e}). Retraining...")
             return False
     else:
-        print("⚠️ No saved models found. Will train new ones.")        return False
+        print("⚠️ No saved models found. Will train new ones.")  
+        return False
 
 # --- INITIALIZATION ---
 # Try to load, otherwise train
