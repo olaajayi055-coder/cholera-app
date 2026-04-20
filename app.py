@@ -10,10 +10,19 @@ import joblib
 import os
 import datetime
 
+# Import custom modules
+from analytics import track_prediction
+from database import save_prediction, get_statistics, init_db
+from auth import login_manager, init_auth, get_user_by_username, create_user, login_required, current_user, login_user, logout_user
+
 app = Flask(__name__)
+app.secret_key = 'super-secret-key-change-in-production' # Change this for real deployment
+
+# Initialize Login Manager
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 
 # --- CONFIGURATION ---
-# Ensure the models directory exists (Critical for cloud deployment)
 MODEL_DIR = 'models'
 os.makedirs(MODEL_DIR, exist_ok=True)
 
@@ -21,14 +30,12 @@ MODEL_PATH = os.path.join(MODEL_DIR, 'cholera_ensemble.pkl')
 SCALER_PATH = os.path.join(MODEL_DIR, 'scaler.pkl')
 DATA_PATH = 'cholera_dataset.csv'
 
-# Global variables
 scaler = None
 ensemble_model = None
 
 # --- 1. DATA LOADING FUNCTIONS ---
 
 def generate_simulated_data():
-    """Generates realistic simulated data if CSV is missing."""
     print("⚠️ Generating simulated dataset...")
     np.random.seed(42)
     n_samples = 600
@@ -39,18 +46,14 @@ def generate_simulated_data():
     water_quality = np.random.randint(1, 6, n_samples)
     sanitation = np.random.randint(1, 6, n_samples)
     
-    # Realistic logic: High fever + dehydration + poor water/sanitation = High Risk
     risk_score = (fever * 0.35) + (dehydration * 0.45) + (water_quality * 0.25) - (sanitation * 0.15)
-    target = (risk_score > 5.5).astype(int)
-    
-    # Add noise (5% flip)
+    target = (risk_score > 5.5).astype(int)    
     noise_indices = np.random.choice(n_samples, size=int(n_samples * 0.05), replace=False)
     target[noise_indices] = 1 - target[noise_indices]
     
-    X = np.column_stack((age, fever, dehydration, water_quality, sanitation)) 
+    X = np.column_stack((age, fever, dehydration, water_quality, sanitation))
     y = target
     
-    # Save generated data to CSV for transparency
     df = pd.DataFrame({
         'age': age, 'fever': fever, 'dehydration': dehydration,
         'water_quality': water_quality, 'sanitation': sanitation,
@@ -58,100 +61,83 @@ def generate_simulated_data():
     })
     df.to_csv(DATA_PATH, index=False)
     print(f"✅ Simulated data saved to {DATA_PATH}")
-    
     return X, y
 
 def load_real_data():
-    """Loads data from CSV or generates if missing."""
     if os.path.exists(DATA_PATH):
         try:
             print(f"📂 Loading data from {DATA_PATH}...")
             df = pd.read_csv(DATA_PATH)
-            
             required_cols = ['age', 'fever', 'dehydration', 'water_quality', 'sanitation', 'cholera_positive']
             if not all(col in df.columns for col in required_cols):
-                raise ValueError("Missing columns in CSV")
-            
+                raise ValueError("Missing columns")
             X = df[['age', 'fever', 'dehydration', 'water_quality', 'sanitation']].values
             y = df['cholera_positive'].values
-            print(f"✅ Data loaded successfully. Shape: {X.shape}")
+            print(f"✅ Data loaded. Shape: {X.shape}")
             return X, y
         except Exception as e:
-            print(f"❌ Error reading CSV ({e}). Regenerating data...")
+            print(f"❌ Error reading CSV: {e}. Regenerating...")
             return generate_simulated_data()
     else:
-        print("📄 CSV not found. Generating new dataset...")
+        print("📄 CSV not found. Generating...")
         return generate_simulated_data()
 
-# --- 2. MODEL TRAINING & LOADING ---
+# --- 2. MODEL TRAINING ---
 
 def train_and_save_model():
-    """Trains the model and saves it to disk."""
     global scaler, ensemble_model
-    
     print("\n--- 🚀 Starting Model Training ---")
     X, y = load_real_data()
     
-    # Scale features
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
     
-    # Define Ensemble
-    rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1) 
+    rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
     lr = LogisticRegression(max_iter=1000, random_state=42)
     svc = SVC(kernel='rbf', probability=True, random_state=42)
     
-    ensemble_model = VotingClassifier(
-        estimators=[('rf', rf), ('lr', lr), ('svc', svc)],
+    ensemble_model = VotingClassifier(        estimators=[('rf', rf), ('lr', lr), ('svc', svc)],
         voting='soft'
     )
     
-    print("🧠 Training ensemble (Random Forest + Logistic Regression + SVM)...")
+    print("🧠 Training ensemble...")
     ensemble_model.fit(X_scaled, y)
     
-    # Evaluate
     preds = ensemble_model.predict(X_scaled)
     acc = accuracy_score(y, preds)
     print(f"✅ Training complete. Accuracy: {acc:.2f}")
     
-    # Save models
-    print(f"💾 Saving models to {MODEL_DIR}...")
+    print(f"💾 Saving models...")
     joblib.dump(ensemble_model, MODEL_PATH)
     joblib.dump(scaler, SCALER_PATH)
     
-    # Save a timestamp file to track when it was trained
     with open(os.path.join(MODEL_DIR, 'last_trained.txt'), 'w') as f:
         f.write(str(datetime.datetime.now()))
-        
-    print("✅ Models saved successfully!\n")
+    print("✅ Models saved!\n")
 
 def load_saved_model():
-    """Loads existing models from disk if available."""
     global scaler, ensemble_model
-    
     if os.path.exists(MODEL_PATH) and os.path.exists(SCALER_PATH):
-        print(f"📂 Loading pre-trained models from {MODEL_DIR}...")
+        print(f"📂 Loading pre-trained models...")
         try:
             ensemble_model = joblib.load(MODEL_PATH)
             scaler = joblib.load(SCALER_PATH)
-            
-            # Check when it was trained
             ts_file = os.path.join(MODEL_DIR, 'last_trained.txt')
             if os.path.exists(ts_file):
                 with open(ts_file, 'r') as f:
-                    print(f"🕒 Model last trained: {f.read().strip()}")
-            
-            print("✅ Pre-trained models loaded successfully!\n")
+                    print(f"🕒 Last trained: {f.read().strip()}")
+            print("✅ Models loaded!\n")
             return True
         except Exception as e:
-            print(f"❌ Error loading models ({e}). Retraining...")
+            print(f"❌ Error loading: {e}. Retraining...")
             return False
     else:
-        print("⚠️ No saved models found. Will train new ones.")  
+        print("⚠️ No saved models. Training new ones...")
         return False
 
 # --- INITIALIZATION ---
-# Try to load, otherwise train
+init_db()
+init_auth()
 if not load_saved_model():
     train_and_save_model()
 
@@ -160,66 +146,75 @@ if not load_saved_model():
 @app.route('/')
 def home():
     return render_template('index.html')
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = get_user_by_username(username)
+        if user and user.check_password(password):
+            login_user(user)
+            return jsonify({'success': True, 'message': 'Login successful'})
+        return jsonify({'success': False, 'message': 'Invalid credentials'}), 401
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if len(username) < 3 or len(password) < 6:
+            return jsonify({'success': False, 'message': 'Username min 3 chars, password min 6'}), 400
+        if create_user(username, password):
+            return jsonify({'success': True, 'message': 'Registration successful'})
+        return jsonify({'success': False, 'message': 'Username exists'}), 400
+    return render_template('register.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return jsonify({'success': True, 'message': 'Logged out'})
 
 @app.route('/predict', methods=['POST'])
 def predict():
     if ensemble_model is None or scaler is None:
-        return jsonify({'error': 'Model not ready. Please wait for training to complete.'}), 503
+        return jsonify({'error': 'Model not ready'}), 503
         
     try:
         data = request.form
+        age = int(float(data['age']))
+        fever = int(float(data['fever']))
+        dehydration = int(float(data['dehydration']))
+        water_quality = int(float(data['water_quality']))
+        sanitation = int(float(data['sanitation']))
         
-        # Parse inputs
-        input_values = [
-            float(data['age']),
-            float(data['fever']),
-            float(data['dehydration']),
-            float(data['water_quality']),
-            float(data['sanitation'])
-        ]
-        
-        input_data = np.array([input_values])
+        input_data = np.array([[age, fever, dehydration, water_quality, sanitation]])
         input_scaled = scaler.transform(input_data)
         
-        # Predict
         prediction = ensemble_model.predict(input_scaled)[0]
         probabilities = ensemble_model.predict_proba(input_scaled)[0]
-        probability = probabilities[1] # Probability of class 1 (Positive)
-        
+        probability = probabilities[1]        
         result = "High Risk of Cholera" if prediction == 1 else "Low Risk of Cholera"
+        risk_level = "Critical" if probability > 0.7 else "Moderate" if probability > 0.4 else "Low"
+        prob_str = f"{probability * 100:.2f}%"
         
-        if probability > 0.7:
-            risk_level = "Critical"
-        elif probability > 0.4:
-            risk_level = "Moderate"
-        else:
-            risk_level = "Low"
+        ip_address = request.remote_addr
+        save_prediction(age, fever, dehydration, water_quality, sanitation, result, prob_str, risk_level, ip_address)
+        track_prediction(result, prob_str, risk_level)
         
         return jsonify({
             'result': result,
-            'probability': f"{probability * 100:.2f}%",            'risk_level': risk_level
+            'probability': prob_str,
+            'risk_level': risk_level
         })
-        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/status')
-def status():
-    """Endpoint to check system health"""
-    is_trained = os.path.exists(MODEL_PATH)
-    ts = "Unknown"
-    if os.path.exists(os.path.join(MODEL_DIR, 'last_trained.txt')):
-        with open(os.path.join(MODEL_DIR, 'last_trained.txt'), 'r') as f:
-            ts = f.read().strip()
-            
-    return jsonify({
-        "status": "online",
-        "model_trained": is_trained,
-        "last_trained": ts,
-        "message": "System operational"
-    })
+@app.route('/api/stats')
+def api_stats():
+    stats = get_statistics()
+    return jsonify(stats)
 
 if __name__ == '__main__':
-    # Debug mode is False for production, but we keep it True for local dev
-    # When deployed on Render, Gunicorn ignores this and uses start.sh
     app.run(host='0.0.0.0', port=5000, debug=True)

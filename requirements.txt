@@ -4,3 +4,5 @@ pandas
 numpy
 joblib
 gunicorn
+flask-login
+werkzeug

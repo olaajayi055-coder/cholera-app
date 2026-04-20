@@ -3,95 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cholera Detection System</title>
+    <title>Cholera Risk Detector</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 400px; }
-        h2 { text-align: center; color: #2c3e50; margin-bottom: 1.5rem; }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; margin-bottom: 0.5rem; color: #555; font-weight: bold; }
-        input[type="number"], select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background-color: #27ae60; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; transition: background 0.3s; }
-        button:hover { background-color: #219150; }
-        #result { margin-top: 1.5rem; padding: 1rem; border-radius: 5px; display: none; text-align: center; }
-        .high-risk { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
-        .low-risk { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
-        .loading { text-align: center; color: #7f8c8d; display: none; margin-top: 10px; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Segoe UI', sans-serif; min-height: 100vh; padding: 20px 0; }
+        .container { max-width: 800px; }
+        .card { border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: none; }
+        .card-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0 !important; padding: 20px; text-align: center; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 12px; font-weight: 600; }
+        #result { margin-top: 20px; padding: 20px; border-radius: 10px; display: none; text-align: center; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .high-risk { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); color: white; }
+        .low-risk { background: linear-gradient(135deg, #51cf66, #40c057); color: white; }
+        .loading { text-align: center; color: #666; display: none; margin-top: 20px; }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #667eea; animation: spin 1s infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .stats-section { margin-top: 30px; }
+        .stat-card { background: white; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .stat-number { font-size: 24px; font-weight: bold; color: #667eea; }
+        .disclaimer { margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px; font-size: 14px; }
+        .auth-links { text-align: right; margin-bottom: 10px; }
+        .auth-links a { color: white; text-decoration: none; margin-left: 15px; font-size: 0.9em; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🦠 Cholera Risk Detector</h2>
-    <form id="predictionForm">
-        <div class="form-group">
-            <label>Age</label>
-            <input type="number" name="age" required min="1" max="100">
+    <div class="auth-links">
+        <a href="/login">Login</a>
+        <a href="/register">Register</a>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h2>🦠 Cholera Risk Detector</h2>
+            <p class="mb-0">AI-Powered Early Warning System</p>
         </div>
-        <div class="form-group">
-            <label>Fever Severity (1-10)</label>
-            <input type="number" name="fever" required min="1" max="10">
-        </div>
-        <div class="form-group">
-            <label>Dehydration Level (1-10)</label>
-            <input type="number" name="dehydration" required min="1" max="10">
-        </div>
-        <div class="form-group">
-            <label>Water Source Quality (1=Good, 5=Poor)</label>
-            <input type="number" name="water_quality" required min="1" max="5">
-        </div>
-        <div class="form-group">
-            <label>Sanitation Score (1=Poor, 5=Good)</label>
-            <input type="number" name="sanitation" required min="1" max="5">
-        </div>
-        <button type="submit">Analyze Risk</button>
-    </form>
-    
-    <div class="loading" id="loading">Analyzing data...</div>
-    <div id="result"></div>
+        <div class="card-body">
+            <form id="predictionForm">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Age</label>
+                        <input type="number" class="form-control" name="age" required min="1" max="100">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Fever Severity (1-10)</label>                        <input type="number" class="form-control" name="fever" required min="1" max="10">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Dehydration Level (1-10)</label>
+                        <input type="number" class="form-control" name="dehydration" required min="1" max="10">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Water Source Quality</label>
+                        <select class="form-select" name="water_quality" required>
+                            <option value="1">1 - Excellent</option>
+                            <option value="2">2 - Good</option>
+                            <option value="3">3 - Fair</option>
+                            <option value="4">4 - Poor</option>
+                            <option value="5">5 - Very Poor</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Sanitation Score</label>
+                    <select class="form-select" name="sanitation" required>
+                        <option value="1">1 - Very Poor</option>
+                        <option value="2">2 - Poor</option>
+                        <option value="3">3 - Fair</option>
+                        <option value="4">4 - Good</option>
+                        <option value="5">5 - Excellent</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                    <span id="btnText">Analyze Risk</span>
+                    <span id="btnSpinner" class="spinner ms-2" style="display:none;"></span>
+                </button>
+            </form>
+            
+            <div class="loading" id="loading"><div class="spinner"></div> Analyzing...</div>
+            <div id="result"></div>
+            
+            <div class="stats-section">
+                <h4 class="text-center mb-3">📊 Live Statistics</h4>
+                <div class="row">
+                    <div class="col-md-4"><div class="stat-card"><div class="stat-number" id="totalPredictions">0</div><div>Total</div></div></div>
+                    <div class="col-md-4"><div class="stat-card"><div class="stat-number" id="highRiskCount">0</div><div>High Risk</div></div></div>
+                    <div class="col-md-4"><div class="stat-card"><div class="stat-number" id="avgProbability">0%</div><div>Avg Prob</div></div></div>
+                </div>
+            </div>
+            
+            <div class="disclaimer">
+                <strong>⚠️ Medical Disclaimer:</strong> This tool provides AI-assisted estimation only. Not a substitute for professional diagnosis. Seek immediate medical attention if symptoms persist.
+            </div>        </div>
+    </div>
 </div>
 
 <script>
+    let stats = { total: 0, highRisk: 0, totalProb: 0 };
+
+    // Fetch initial stats
+    fetch('/api/stats').then(r => r.json()).then(data => {
+        stats.total = data.total;
+        stats.highRisk = data.high_risk;
+        stats.totalProb = data.total * data.avg_probability; // Approximate reconstruction
+        updateStatsUI();
+    });
+
     document.getElementById('predictionForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const formData = new FormData(this);
         const resultDiv = document.getElementById('result');
         const loadingDiv = document.getElementById('loading');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
         
         resultDiv.style.display = 'none';
         loadingDiv.style.display = 'block';
-
+        btnText.textContent = 'Analyzing...';
+        btnSpinner.style.display = 'inline-block';
+        
         try {
-            const response = await fetch('/predict', {
-                method: 'POST',
-                body: formData
-            });
+            const response = await fetch('/predict', { method: 'POST', body: formData });
             const data = await response.json();
             
             loadingDiv.style.display = 'none';
-            resultDiv.style.display = 'block';
+            btnText.textContent = 'Analyze Risk';
+            btnSpinner.style.display = 'none';
             
             if (data.error) {
-                resultDiv.innerHTML = `<strong>Error:</strong> ${data.error}`;
+                resultDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
                 resultDiv.className = '';
             } else {
-                const isHighRisk = data.probability.includes('50') || parseFloat(data.probability) > 50; // Simplified logic for styling
-                resultDiv.className = isHighRisk ? 'high-risk' : 'low-risk';
+                const probVal = parseFloat(data.probability);
+                const isHigh = probVal > 50;
+                resultDiv.className = isHigh ? 'high-risk' : 'low-risk';
                 resultDiv.innerHTML = `
                     <h3>${data.result}</h3>
-                    <p>Probability: <strong>${data.probability}</strong></p>
-                    <p>Risk Level: ${data.risk_level}</p>
-                    <small>Note: This is an AI estimation. Consult a medical professional immediately if symptoms persist.</small>
+                    <div class="display-4 fw-bold">${data.probability}</div>
+                    <p class="lead">Risk: ${data.risk_level}</p>
+                    <canvas id="riskChart" width="300" height="150"></canvas>
+                    <div class="mt-3">
+                        <button class="btn btn-outline-light btn-sm me-2" onclick="shareResult('${data.result}', '${data.probability}')">📤 Share</button>                        <button class="btn btn-outline-light btn-sm" onclick="resetForm()">🔄 New</button>
+                    </div>
                 `;
+                
+                // Update Stats
+                stats.total++;
+                stats.totalProb += probVal;
+                if(isHigh) stats.highRisk++;
+                updateStatsUI();
+                
+                // Chart
+                setTimeout(() => {
+                    const ctx = document.getElementById('riskChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Risk', 'Safety'],
+                            datasets: [{ data: [probVal, 100-probVal], backgroundColor: [isHigh ? '#ff6b6b' : '#51cf66', '#e9ecef'] }]
+                        },
+                        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+                    });
+                }, 100);
             }
         } catch (error) {
             loadingDiv.style.display = 'none';
+            btnText.textContent = 'Analyze Risk';
+            btnSpinner.style.display = 'none';
             resultDiv.style.display = 'block';
-            resultDiv.innerHTML = "System error. Please try again.";
+            resultDiv.innerHTML = `<div class="alert alert-danger">System error.</div>`;
             resultDiv.className = 'high-risk';
         }
     });
-</script>
 
+    function updateStatsUI() {
+        document.getElementById('totalPredictions').textContent = stats.total;
+        document.getElementById('highRiskCount').textContent = stats.highRisk;
+        const avg = stats.total > 0 ? (stats.totalProb / stats.total).toFixed(1) : 0;
+        document.getElementById('avgProbability').textContent = avg + '%';
+    }
+
+    function shareResult(res, prob) {
+        const text = `Cholera Risk Check: ${res} (${prob}). Check it out!`;
+        if (navigator.share) navigator.share({ title: 'Cholera Detector', text: text, url: window.location.href });
+        else window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+    }
+
+    function resetForm() {
+        document.getElementById('predictionForm').reset();
+        document.getElementById('result').style.display = 'none';
+    }</script>
 </body>
 </html>
