@@ -2,6 +2,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 
+# Initialize the Login Manager
 login_manager = LoginManager()
 
 class User(UserMixin):
@@ -44,7 +45,7 @@ def get_user_by_username(username):
     user_data = cursor.fetchone()
     conn.close()
     
-    if user_
+    if user_data is not None:
         return User(user_data[0], user_data[1], user_data[2])
     return None
 
@@ -63,12 +64,14 @@ def create_user(username, password):
 
 @login_manager.user_loader
 def load_user(user_id):
+    """Load user by ID for Flask-Login"""
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
+    # Ensure the SQL query is complete
     cursor.execute('SELECT id, username, password_hash FROM users WHERE id = ?', (user_id,))
     user_data = cursor.fetchone()
     conn.close()
     
-    if user_
+    if user_data is not None:
         return User(user_data[0], user_data[1], user_data[2])
     return None
