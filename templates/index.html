@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cholera Detection System</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 400px; }
+        h2 { text-align: center; color: #2c3e50; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; color: #555; font-weight: bold; }
+        input[type="number"], select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background-color: #27ae60; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; transition: background 0.3s; }
+        button:hover { background-color: #219150; }
+        #result { margin-top: 1.5rem; padding: 1rem; border-radius: 5px; display: none; text-align: center; }
+        .high-risk { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+        .low-risk { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .loading { text-align: center; color: #7f8c8d; display: none; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🦠 Cholera Risk Detector</h2>
+    <form id="predictionForm">
+        <div class="form-group">
+            <label>Age</label>
+            <input type="number" name="age" required min="1" max="100">
+        </div>
+        <div class="form-group">
+            <label>Fever Severity (1-10)</label>
+            <input type="number" name="fever" required min="1" max="10">
+        </div>
+        <div class="form-group">
+            <label>Dehydration Level (1-10)</label>
+            <input type="number" name="dehydration" required min="1" max="10">
+        </div>
+        <div class="form-group">
+            <label>Water Source Quality (1=Good, 5=Poor)</label>
+            <input type="number" name="water_quality" required min="1" max="5">
+        </div>
+        <div class="form-group">
+            <label>Sanitation Score (1=Poor, 5=Good)</label>
+            <input type="number" name="sanitation" required min="1" max="5">
+        </div>
+        <button type="submit">Analyze Risk</button>
+    </form>
+    
+    <div class="loading" id="loading">Analyzing data...</div>
+    <div id="result"></div>
+</div>
+
+<script>
+    document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const resultDiv = document.getElementById('result');
+        const loadingDiv = document.getElementById('loading');
+        
+        resultDiv.style.display = 'none';
+        loadingDiv.style.display = 'block';
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            
+            loadingDiv.style.display = 'none';
+            resultDiv.style.display = 'block';
+            
+            if (data.error) {
+                resultDiv.innerHTML = `<strong>Error:</strong> ${data.error}`;
+                resultDiv.className = '';
+            } else {
+                const isHighRisk = data.probability.includes('50') || parseFloat(data.probability) > 50; // Simplified logic for styling
+                resultDiv.className = isHighRisk ? 'high-risk' : 'low-risk';
+                resultDiv.innerHTML = `
+                    <h3>${data.result}</h3>
+                    <p>Probability: <strong>${data.probability}</strong></p>
+                    <p>Risk Level: ${data.risk_level}</p>
+                    <small>Note: This is an AI estimation. Consult a medical professional immediately if symptoms persist.</small>
+                `;
+            }
+        } catch (error) {
+            loadingDiv.style.display = 'none';
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = "System error. Please try again.";
+            resultDiv.className = 'high-risk';
+        }
+    });
+</script>
+
+</body>
+</html>
