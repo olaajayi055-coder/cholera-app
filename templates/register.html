@@ -2,31 +2,98 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Register</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Cholera Detector</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 100%; max-width: 400px; }
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px; /* Adds space on very small screens */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .register-card {
+            background: white;
+            padding: 40px 30px; /* Top/Bottom 40px, Left/Right 30px */
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px; /* Prevents it from getting too wide */
+            box-sizing: border-box; /* Ensures padding doesn't increase width */
+        }
+        h2 { font-size: 24px; font-weight: bold; color: #333; }
+        .form-control { border-radius: 8px; padding: 10px; }
+        .btn-primary { 
+            border-radius: 8px; 
+            padding: 10px; 
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .alert { font-size: 14px; border-radius: 8px; }
+        a { color: #667eea; text-decoration: none; font-weight: 500; }
+        a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2 class="text-center mb-4">📝 Register</h2>
+    <div class="register-card">
+        <h2 class="text-center mb-4">📝 Create Account</h2>
         <form id="registerForm">
-            <div class="mb-3"><label class="form-label">Username (min 3)</label><input type="text" class="form-control" name="username" required minlength="3"></div>
-            <div class="mb-3"><label class="form-label">Password (min 6)</label><input type="password" class="form-control" name="password" required minlength="6"></div>
-            <button type="submit" class="btn btn-primary w-100">Register</button>
+            <div class="mb-3">
+                <label class="form-label text-muted small">Username (min 3 characters)</label>
+                <input type="text" class="form-control" name="username" required minlength="3" placeholder="Enter username">
+            </div>
+            <div class="mb-3">
+                <label class="form-label text-muted small">Password (min 6 characters)</label>
+                <input type="password" class="form-control" name="password" required minlength="6" placeholder="Enter password">
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mt-2">Register</button>
         </form>
-        <div class="text-center mt-3"><a href="/login">Have account? Login</a> | <a href="/">Back Home</a></div>
+        <div class="text-center mt-4">
+            <p class="small text-muted mb-1">Already have an account?</p>
+            <a href="/login" class="fw-bold">Login here</a>
+            <br>
+            <a href="/" class="small text-muted mt-2 d-inline-block">← Back to Home</a>
+        </div>
         <div id="message" class="mt-3"></div>
     </div>
+
     <script>
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const res = await fetch('/register', { method: 'POST', body: new FormData(this) });
-            const data = await res.json();
-            if(data.success) window.location.href = '/login';
-            else document.getElementById('message').innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+            const formData = new FormData(this);
+            const messageDiv = document.getElementById('message');
+            const btn = document.querySelector('button[type="submit"]');
+            
+            // Disable button while loading
+            btn.disabled = true;
+            btn.textContent = 'Registering...';
+            
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    messageDiv.innerHTML = `<div class="alert alert-success">Success! Redirecting to login...</div>`;
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1500);
+                } else {
+                    messageDiv.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+                    btn.disabled = false;
+                    btn.textContent = 'Register';
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `<div class="alert alert-danger">Registration failed. Please try again.</div>`;
+                btn.disabled = false;
+                btn.textContent = 'Register';
+            }
         });
     </script>
 </body>
