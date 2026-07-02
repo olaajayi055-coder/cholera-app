@@ -7,33 +7,112 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: 'Segoe UI', sans-serif; min-height: 100vh; padding: 20px 0; }
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            font-family: 'Segoe UI', sans-serif; 
+            min-height: 100vh; 
+            padding: 20px 0; 
+        }
         .container { max-width: 800px; }
-        .card { border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: none; }
-        .card-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0 !important; padding: 20px; text-align: center; }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 12px; font-weight: 600; }
-        #result { margin-top: 20px; padding: 20px; border-radius: 10px; display: none; text-align: center; animation: fadeIn 0.5s; }
+        .card { 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: none;
+        }
+        .card-header { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+            text-align: center;
+        }
+        .form-label { font-weight: 600; color: #555; }
+        .btn-primary { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px;
+            font-weight: 600;
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        #result { 
+            margin-top: 20px; 
+            padding: 20px; 
+            border-radius: 10px; 
+            display: none; 
+            text-align: center; 
+            animation: fadeIn 0.5s;
+        }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .high-risk { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); color: white; }
-        .low-risk { background: linear-gradient(135deg, #51cf66, #40c057); color: white; }
-        .loading { text-align: center; color: #666; display: none; margin-top: 20px; }
-        .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(0,0,0,0.1); border-radius: 50%; border-top-color: #667eea; animation: spin 1s infinite; }
+        .high-risk { 
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a); 
+            color: white; 
+        }
+        .low-risk { 
+            background: linear-gradient(135deg, #51cf66, #40c057); 
+            color: white; 
+        }
+        .loading { 
+            text-align: center; 
+            color: #666; 
+            display: none; 
+            margin-top: 20px; 
+            font-size: 18px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .stats-section { margin-top: 30px; }
-        .stat-card { background: white; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .stat-number { font-size: 24px; font-weight: bold; color: #667eea; }
-        .disclaimer { margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px; font-size: 14px; }
-        .auth-links { text-align: right; margin-bottom: 10px; }
-        .auth-links a { color: white; text-decoration: none; margin-left: 15px; font-size: 0.9em; }
+        .stats-section { 
+            margin-top: 30px; 
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+        }
+        .stat-card { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px; 
+            border-radius: 10px; 
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin-bottom: 15px;
+        }
+        .stat-number { 
+            font-size: 32px; 
+            font-weight: bold; 
+            color: white;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .disclaimer { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: #fff3cd; 
+            border-left: 4px solid #ffc107; 
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        #riskChart {
+            max-width: 300px;
+            margin: 20px auto;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="auth-links">
-        <a href="/login">Login</a>
-        <a href="/register">Register</a>
-    </div>
     <div class="card">
         <div class="card-header">
             <h2>🦠 Cholera Risk Detector</h2>
@@ -44,72 +123,108 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Age</label>
-                        <input type="number" class="form-control" name="age" required min="1" max="100">
+                        <input type="number" class="form-control" name="age" required min="1" max="100" placeholder="Enter age">
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Fever Severity (1-10)</label>                        <input type="number" class="form-control" name="fever" required min="1" max="10">
+                        <label class="form-label">Fever Severity (1-10)</label>
+                        <input type="number" class="form-control" name="fever" required min="1" max="10" placeholder="1=Mild, 10=Severe">
                     </div>
                 </div>
+                
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Dehydration Level (1-10)</label>
-                        <input type="number" class="form-control" name="dehydration" required min="1" max="10">
+                        <input type="number" class="form-control" name="dehydration" required min="1" max="10" placeholder="1=None, 10=Severe">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Water Source Quality</label>
                         <select class="form-select" name="water_quality" required>
-                            <option value="1">1 - Excellent</option>
-                            <option value="2">2 - Good</option>
-                            <option value="3">3 - Fair</option>
-                            <option value="4">4 - Poor</option>
-                            <option value="5">5 - Very Poor</option>
+                            <option value="" disabled selected>Select quality</option>
+                            <option value="1">1 - Excellent (Treated)</option>
+                            <option value="2">2 - Good (Filtered)</option>
+                            <option value="3">3 - Fair (Well Water)</option>
+                            <option value="4">4 - Poor (River/Lake)</option>
+                            <option value="5">5 - Very Poor (Contaminated)</option>
                         </select>
                     </div>
                 </div>
+                
                 <div class="mb-3">
                     <label class="form-label">Sanitation Score</label>
                     <select class="form-select" name="sanitation" required>
-                        <option value="1">1 - Very Poor</option>
-                        <option value="2">2 - Poor</option>
-                        <option value="3">3 - Fair</option>
-                        <option value="4">4 - Good</option>
-                        <option value="5">5 - Excellent</option>
+                        <option value="" disabled selected>Select sanitation level</option>
+                        <option value="1">1 - Very Poor (No facilities)</option>
+                        <option value="2">2 - Poor (Basic latrine)</option>
+                        <option value="3">3 - Fair (Shared toilet)</option>
+                        <option value="4">4 - Good (Private toilet)</option>
+                        <option value="5">5 - Excellent (Modern sewage)</option>
                     </select>
                 </div>
+                
                 <button type="submit" class="btn btn-primary w-100">
                     <span id="btnText">Analyze Risk</span>
                     <span id="btnSpinner" class="spinner ms-2" style="display:none;"></span>
                 </button>
             </form>
             
-            <div class="loading" id="loading"><div class="spinner"></div> Analyzing...</div>
+            <div class="loading" id="loading">
+                <div class="spinner"></div> Analyzing your symptoms...
+            </div>
+            
             <div id="result"></div>
             
+            <!-- Statistics Section -->
             <div class="stats-section">
                 <h4 class="text-center mb-3">📊 Live Statistics</h4>
                 <div class="row">
-                    <div class="col-md-4"><div class="stat-card"><div class="stat-number" id="totalPredictions">0</div><div>Total</div></div></div>
-                    <div class="col-md-4"><div class="stat-card"><div class="stat-number" id="highRiskCount">0</div><div>High Risk</div></div></div>
-                    <div class="col-md-4"><div class="stat-card"><div class="stat-number" id="avgProbability">0%</div><div>Avg Prob</div></div></div>
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalPredictions">0</div>
+                            <div class="stat-label">Total Predictions</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <div class="stat-number" id="highRiskCount">0</div>
+                            <div class="stat-label">High Risk Cases</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <div class="stat-number" id="avgProbability">0%</div>
+                            <div class="stat-label">Avg Probability</div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
             <div class="disclaimer">
-                <strong>⚠️ Medical Disclaimer:</strong> This tool provides AI-assisted estimation only. Not a substitute for professional diagnosis. Seek immediate medical attention if symptoms persist.
-            </div>        </div>
+                <strong>⚠️ Medical Disclaimer:</strong> This tool provides AI-assisted risk estimation only. It is not a substitute for professional medical diagnosis. If you suspect cholera, seek immediate medical attention.
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    let stats = { total: 0, highRisk: 0, totalProb: 0 };
+    // Initialize statistics
+    let stats = {
+        total: 0,
+        highRisk: 0,
+        totalProbability: 0
+    };
 
-    // Fetch initial stats
-    fetch('/api/stats').then(r => r.json()).then(data => {
-        stats.total = data.total;
-        stats.highRisk = data.high_risk;
-        stats.totalProb = data.total * data.avg_probability; // Approximate reconstruction
-        updateStatsUI();
-    });
+    // Load initial statistics from server
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            stats.total = data.total || 0;
+            stats.highRisk = data.high_risk || 0;
+            stats.totalProbability = (data.avg_probability || 0) * stats.total;
+            updateStats();
+        })
+        .catch(error => {
+            console.log('Could not load initial stats:', error);
+        });
 
     document.getElementById('predictionForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -119,13 +234,17 @@
         const btnText = document.getElementById('btnText');
         const btnSpinner = document.getElementById('btnSpinner');
         
+        // Show loading state
         resultDiv.style.display = 'none';
         loadingDiv.style.display = 'block';
         btnText.textContent = 'Analyzing...';
         btnSpinner.style.display = 'inline-block';
         
         try {
-            const response = await fetch('/predict', { method: 'POST', body: formData });
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
             const data = await response.json();
             
             loadingDiv.style.display = 'none';
@@ -133,38 +252,79 @@
             btnSpinner.style.display = 'none';
             
             if (data.error) {
-                resultDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                resultDiv.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${data.error}</div>`;
                 resultDiv.className = '';
+                resultDiv.style.display = 'block';
             } else {
-                const probVal = parseFloat(data.probability);
-                const isHigh = probVal > 50;
-                resultDiv.className = isHigh ? 'high-risk' : 'low-risk';
+                const probValue = parseFloat(data.probability);
+                const isHighRisk = probValue > 50;
+                
+                // Set result class and content
+                resultDiv.className = isHighRisk ? 'high-risk' : 'low-risk';
                 resultDiv.innerHTML = `
                     <h3>${data.result}</h3>
                     <div class="display-4 fw-bold">${data.probability}</div>
-                    <p class="lead">Risk: ${data.risk_level}</p>
-                    <canvas id="riskChart" width="300" height="150"></canvas>
+                    <p class="lead">Risk Level: ${data.risk_level}</p>
+                    <canvas id="riskChart" width="300" height="300"></canvas>
                     <div class="mt-3">
-                        <button class="btn btn-outline-light btn-sm me-2" onclick="shareResult('${data.result}', '${data.probability}')">📤 Share</button>                        <button class="btn btn-outline-light btn-sm" onclick="resetForm()">🔄 New</button>
+                        <button class="btn btn-outline-light btn-sm me-2" onclick="shareResult('${data.result}', '${data.probability}')">
+                            📤 Share Result
+                        </button>
+                        <button class="btn btn-outline-light btn-sm" onclick="resetForm()">
+                            🔄 New Assessment
+                        </button>
                     </div>
                 `;
+                resultDiv.style.display = 'block';
                 
-                // Update Stats
+                // Update statistics
                 stats.total++;
-                stats.totalProb += probVal;
-                if(isHigh) stats.highRisk++;
-                updateStatsUI();
+                stats.totalProbability += probValue;
+                if (isHighRisk) {
+                    stats.highRisk++;
+                }
+                updateStats();
                 
-                // Chart
+                // Create chart AFTER result is displayed
                 setTimeout(() => {
                     const ctx = document.getElementById('riskChart').getContext('2d');
                     new Chart(ctx, {
                         type: 'doughnut',
                         data: {
-                            labels: ['Risk', 'Safety'],
-                            datasets: [{ data: [probVal, 100-probVal], backgroundColor: [isHigh ? '#ff6b6b' : '#51cf66', '#e9ecef'] }]
+                            labels: ['Risk Probability', 'Safety Margin'],
+                            datasets: [{
+                                data: [probValue, 100 - probValue],
+                                backgroundColor: [
+                                    isHighRisk ? '#ff6b6b' : '#51cf66', 
+                                    '#e9ecef'
+                                ],
+                                borderWidth: 0
+                            }]
                         },
-                        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: { 
+                                    position: 'bottom',
+                                    labels: {
+                                        color: isHighRisk ? '#fff' : '#333',
+                                        font: {
+                                            size: 12
+                                        }
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Risk Distribution',
+                                    color: isHighRisk ? '#fff' : '#333',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                }
+                            }
+                        }
                     });
                 }, 100);
             }
@@ -173,27 +333,37 @@
             btnText.textContent = 'Analyze Risk';
             btnSpinner.style.display = 'none';
             resultDiv.style.display = 'block';
-            resultDiv.innerHTML = `<div class="alert alert-danger">System error.</div>`;
+            resultDiv.innerHTML = `<div class="alert alert-danger">System error. Please try again.</div>`;
             resultDiv.className = 'high-risk';
         }
     });
 
-    function updateStatsUI() {
+    function updateStats() {
         document.getElementById('totalPredictions').textContent = stats.total;
         document.getElementById('highRiskCount').textContent = stats.highRisk;
-        const avg = stats.total > 0 ? (stats.totalProb / stats.total).toFixed(1) : 0;
+        const avg = stats.total > 0 ? (stats.totalProbability / stats.total).toFixed(1) : 0;
         document.getElementById('avgProbability').textContent = avg + '%';
     }
 
-    function shareResult(res, prob) {
-        const text = `Cholera Risk Check: ${res} (${prob}). Check it out!`;
-        if (navigator.share) navigator.share({ title: 'Cholera Detector', text: text, url: window.location.href });
-        else window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+    function shareResult(result, probability) {
+        const text = `I just used the Cholera Risk Detector and got: ${result} (${probability}). Check it out!`;
+        if (navigator.share) {
+            navigator.share({
+                title: 'Cholera Risk Assessment',
+                text: text,
+                url: window.location.href
+            });
+        } else {
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`;
+            window.open(twitterUrl, '_blank');
+        }
     }
 
     function resetForm() {
         document.getElementById('predictionForm').reset();
         document.getElementById('result').style.display = 'none';
-    }</script>
+    }
+</script>
+
 </body>
 </html>
